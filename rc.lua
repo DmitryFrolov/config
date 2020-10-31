@@ -10,16 +10,9 @@ local beautiful = require("beautiful")
 -- Notification library
 local naughty = require("naughty")
 local menubar = require("menubar")
-local APW = require("apw/widget")
 
---/////////hide systray
-stupid_bug = drawin({})
-systrayvisible = true
-systray = wibox.widget.systray()
-container = wibox.layout.constraint()
-container:set_widget(systray)
-container:set_strategy("min")
-container:set_width(4)
+-- Load Debian menu entries
+require("debian.menu")
 
 -- {{{ Error handling
 -- Check if awesome encountered an error during startup and fell back to
@@ -48,13 +41,13 @@ end
 
 -- {{{ Variable definitions
 -- Themes define colours, icons, font and wallpapers.
-   beautiful.init("~/.config/awesome/themes/wow/theme.lua")
+beautiful.init("/home/admin-local/.config/awesome/themes/sky/theme.lua")
 
 -- This is used later as the default terminal and editor to run.
 terminal = "terminator"
 editor = os.getenv("EDITOR") or "emacs"
 editor_cmd = terminal .. " -e " .. editor
-browser = "chromium-dev"
+
 
 -- Default modkey.
 -- Usually, Mod4 is the key with a logo between Control and Alt.
@@ -94,8 +87,8 @@ end
 tags = {}
 for s = 1, screen.count() do
     -- Each screen has its own tag table.
-   tags[s] = awful.tag({ "All", "Terminal", "Emacs", "Emacs",  "Browser", "Media", "Other", "Other"}, s,
-      {layouts[1], layouts[2], layouts[4], layouts[4], layouts[3], layouts[2], layouts[1], layouts[1]})
+    tags[s] = awful.tag({ "All", "Terminal", "Editor", "Editor", "Browser", "Other", "Other" }, s, 
+                    layouts[0], layouts[1], layouts[3], layouts[3], layouts[2], layouts[0], layouts[0])
 end
 -- }}}
 
@@ -108,12 +101,9 @@ myawesomemenu = {
    { "quit", awesome.quit }
 }
 
-internet = {
-   { "Chromium", "chromium" }
-}
-
 mymainmenu = awful.menu({ items = { { "awesome", myawesomemenu, beautiful.awesome_icon },
-                                    { "internet", internet }
+                                    { "Debian", debian.menu.Debian_menu.Debian },
+                                    { "open terminal", terminal }
                                   }
                         })
 
@@ -185,19 +175,19 @@ for s = 1, screen.count() do
     -- We need one layoutbox per screen.
     mylayoutbox[s] = awful.widget.layoutbox(s)
     mylayoutbox[s]:buttons(awful.util.table.join(
-			      awful.button({ }, 1, function () awful.layout.inc(layouts, 1) end),
-			      awful.button({ }, 3, function () awful.layout.inc(layouts, -1) end),
-			      awful.button({ }, 4, function () awful.layout.inc(layouts, 1) end),
-			      awful.button({ }, 5, function () awful.layout.inc(layouts, -1) end)))
+                           awful.button({ }, 1, function () awful.layout.inc(layouts, 1) end),
+                           awful.button({ }, 3, function () awful.layout.inc(layouts, -1) end),
+                           awful.button({ }, 4, function () awful.layout.inc(layouts, 1) end),
+                           awful.button({ }, 5, function () awful.layout.inc(layouts, -1) end)))
     -- Create a taglist widget
     mytaglist[s] = awful.widget.taglist(s, awful.widget.taglist.filter.all, mytaglist.buttons)
-    
+
     -- Create a tasklist widget
     mytasklist[s] = awful.widget.tasklist(s, awful.widget.tasklist.filter.currenttags, mytasklist.buttons)
 
     -- Create the wibox
     mywibox[s] = awful.wibox({ position = "top", screen = s })
-    
+
     -- Widgets that are aligned to the left
     local left_layout = wibox.layout.fixed.horizontal()
     left_layout:add(mylauncher)
@@ -206,12 +196,10 @@ for s = 1, screen.count() do
 
     -- Widgets that are aligned to the right
     local right_layout = wibox.layout.fixed.horizontal()
-    --if s == 1 then right_layout:add(wibox.widget.systray()) end
-    --hide systray
-    if s == 1 then right_layout:add(container) end
+    if s == 1 then right_layout:add(wibox.widget.systray()) end
     right_layout:add(mytextclock)
     right_layout:add(mylayoutbox[s])
-    
+
     -- Now bring it all together (with the tasklist in the middle)
     local layout = wibox.layout.align.horizontal()
     layout:set_left(left_layout)
@@ -248,25 +236,6 @@ globalkeys = awful.util.table.join(
         end),
     awful.key({ modkey,           }, "w", function () mymainmenu:show() end),
 
-    -- show/hide systray
-    awful.key({ modkey,           }, "s", function () 
-	  if systrayvisible then
-	     awesome.systray(stupid_bug, 0, 0, 10, true, "#000000")
-	     container:set_widget(nil)
-	     container:set_strategy("exact")
-	     systrayvisible = false
-	  else
-	     container:set_strategy("min")
-	     container:set_widget(systray)
-	     systrayvisible = true
-	  end
-    end),
-    -- keybindings for pulseaudio plugin
-    awful.key({ modkey,           }, "F12",  APW.Up),
-    awful.key({ modkey,           }, "F11",  APW.Down),	
-    awful.key({ modkey,           }, "F10",  APW.ToggleMute),
-    -- keybindings for run Battle.net
---    awful.key({ modkey, "Shift"   }, "b", os.execute("wine .wine/drive_c/Program\ Files\ \(x86\)/Battle.net/Battle.net.exe") end),
     -- Layout manipulation
     awful.key({ modkey, "Shift"   }, "j", function () awful.client.swap.byidx(  1)    end),
     awful.key({ modkey, "Shift"   }, "k", function () awful.client.swap.byidx( -1)    end),
@@ -280,14 +249,11 @@ globalkeys = awful.util.table.join(
                 client.focus:raise()
             end
         end),
-    
+
     -- Standard program
     awful.key({ modkey,           }, "Return", function () awful.util.spawn(terminal) end),
     awful.key({ modkey, "Control" }, "r", awesome.restart),
     awful.key({ modkey, "Shift"   }, "q", awesome.quit),
-
-    awful.key({ }, "Print", function() awful.util.spawn("scrot '/home/dimas/Documents/Screenshots/%Y-%m-%d-%H-%M-%S.png'") end ),
-    awful.key({"Shift"}, "Print", function() awful.util.spawn("scrot -u '/home/dimas/Documents/Screenshots/window_%Y-%m-%d-%H-%M-%S.png'") end ),
 
     awful.key({ modkey,           }, "l",     function () awful.tag.incmwfact( 0.05)    end),
     awful.key({ modkey,           }, "h",     function () awful.tag.incmwfact(-0.05)    end),
@@ -405,19 +371,12 @@ awful.rules.rules = {
       properties = { floating = true } },
     { rule = { class = "gimp" },
       properties = { floating = true } },
-    -- Start applications on the set tags
-    { rule = { class = "Terminator"},
-      properties = { tag = tags[1][2] } },
-    { rule = { class = "Emacs"},
+    { rule = { class = "Code" },
       properties = { tag = tags[1][3] } },
-    { rule = { class = "chromium" },
-      properties = { tag = tags[1][5] } },
-    { rule = { class = "Audacious"},
-      properties = { tag = tags[1][6] } },
-    { rule = { class = "Skype"},
-      properties = { tag = tags[1][6] } },
-    { rule = { class = "Wine"},
-      properties = { tag = tags[1][7] } },
+    { rule = { class = "Emacs" },
+      properties = { tag = tags[1][4] } },
+    -- { rule = { class = "Terminator" },
+    --   properties = { tag = tags[1][2] } },
     -- Set Firefox to always map on tags number 2 of screen 1.
     -- { rule = { class = "Firefox" },
     --   properties = { tag = tags[1][2] } },
@@ -445,6 +404,9 @@ client.connect_signal("manage", function (c, startup)
             awful.placement.no_overlap(c)
             awful.placement.no_offscreen(c)
         end
+    elseif not c.size_hints.user_position and not c.size_hints.program_position then
+        -- Prevent clients from being unreachable after screen count change
+        awful.placement.no_offscreen(c)
     end
 
     local titlebars_enabled = false
@@ -493,15 +455,6 @@ client.connect_signal("manage", function (c, startup)
     end
 end)
 
--- client.connect_signal("focus", function(c) c.border_color = beautiful.border_focus end)
--- client.connect_signal("unfocus", function(c) c.border_color = beautiful.border_normal end)
+client.connect_signal("focus", function(c) c.border_color = beautiful.border_focus end)
+client.connect_signal("unfocus", function(c) c.border_color = beautiful.border_normal end)
 -- }}}
-
--- os.execute ("pgrep -u $USER -x volumeicon || (volumeicon &)")
-
-
---xxkb &
---setxkbmap -layout us,ru -variant -option grp:alt_shift_toggle,terminate:ctrl_alt_bksp @
---os.execute("pgrep -u $dimas -x xxkb || (xxkb &)")
-os.execute("xxkb & setxkbmap -layout us,ru -variant -option grp:alt_shift_toggle,terminate:ctrl_alt_bksp @")
---os.execute("wine ~/.wine/drive_c/Program\ Files\ \(x86\)/Battle.net/Battle.net.exe")
